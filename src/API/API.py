@@ -2,7 +2,6 @@ import requests
 import json
 import re
 import logging
-import time
 
 from src.Timer import timer
 
@@ -10,6 +9,8 @@ from src.Timer import timer
 # installed models: gemma4:e2b, gemma3:1b, gemma4
 # gemma3:1b does not support tool calls, but is super quick
 # gemma4:e2b is slower, but supports tool calls
+from src.Tools.ReadCodeTool import ReadCodeTool
+
 
 def test_function():
     print("This is a test function to demonstrate tool calls.")
@@ -94,8 +95,6 @@ def call_ollama(
             print(f"\n[TOOL CALL] Model wants to use: {name}")
             print(f"[ARGUMENTS] {args}")
 
-            # In a real agent, you would execute your python function here
-            # and send the result back to Ollama for the final answer.
         return {
             "tool_calls": tool_calls,
             "thinking": [],
@@ -103,18 +102,10 @@ def call_ollama(
             "full_text": answer
         }
 
-example_tools = [{
-    "type": "function",
-    "function": {
-        "name": "test_function",
-        "description": "Used to test tool calls",
-    }
-}]
+example_tools = [ReadCodeTool]
 model_name = "gemma4:e2b"
 user_prompt = "What is the current stock price of NVDA?"
 system_prompt = "You are a helpful assistant that can provide stock prices using the get_stock_price function."
-# todos:
-# - deal with non thinking models
+
 logging.basicConfig(level=logging.DEBUG)
 call_ollama(model_name, [], [])
-# call_ollama(model_name="gemma4")

@@ -1,13 +1,12 @@
 import asyncio
 
 from src.API.API import call_ollama
-from src.Tools import Base_Tool
-from src.Tools.Base_Tool import GetStockPrice
-
+from src.Tools import BaseTool
+from src.Tools.ReadCodeTool import ReadCodeTool
 
 class Agent:
 
-    def __init__(self, model: str, system_prompt: str, tools: list[Base_Tool]):
+    def __init__(self, model: str, system_prompt: str, tools: list[BaseTool]):
         """
         Initiates the Agent with a system prompt and a list of tools.
         :param model: Model the agent should use
@@ -74,7 +73,7 @@ class Agent:
         """Executes a tool call from the model.
         :param tool_call: dictionary that contains the tool call
         :return: response from the tool execution"""
-        # TODO build this function
+
         # find the function and its arguments
         function_name = tool_call.get("function", {}).get("name")
         args = tool_call.get("function", {}).get("arguments", {})
@@ -93,9 +92,9 @@ class Agent:
 
 
 model = "gemma4:e2b"
-system_prompt = "You are a helpful assistant that can call tools to answer user questions."
-tools = [GetStockPrice]
-user_prompt = "What is the current stock price of NVDA?"
+system_prompt = "You are a helpful coding assistant that calls tools like ReadCodeTool to answer user questions."
+tools = [ReadCodeTool]
+user_prompt = r"What does the Timer file (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\Timer.py) do? Use the ReadCodeTool to read the file and answer the question."
 test_agent = agent = Agent(model, system_prompt, tools)
 response = asyncio.run(test_agent.agent_loop(user_prompt))
 print(response)

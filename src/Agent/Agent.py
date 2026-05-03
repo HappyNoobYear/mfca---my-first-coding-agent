@@ -3,6 +3,7 @@ import asyncio
 from src.API.API import call_ollama
 from src.Tools import BaseTool
 from src.Tools.ReadCodeTool import ReadCodeTool
+from src.Tools.ReadDirectoryTool import ReadDirectoryTool
 
 class Agent:
 
@@ -93,8 +94,13 @@ class Agent:
 
 model = "gemma4:e2b"
 system_prompt = "You are a helpful coding assistant that calls tools like ReadCodeTool to answer user questions."
-tools = [ReadCodeTool]
-user_prompt = r"What does the Timer file (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\Timer.py) do? Use the ReadCodeTool to read the file and answer the question."
+tools = [ReadCodeTool, ReadDirectoryTool]
+
+# test ReadCodeTool
+# user_prompt = r"What does the Timer file (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\Timer.py) do? Use the ReadCodeTool to read the file and answer the question."
+# test ReadDirectoryTool
+user_prompt = r"Show me the files in the directory (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\). Use the ReadDirectoryTool."
+
 test_agent = agent = Agent(model, system_prompt, tools)
 response = asyncio.run(test_agent.agent_loop(user_prompt))
 print(response)

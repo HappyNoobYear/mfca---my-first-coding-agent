@@ -39,6 +39,10 @@ TODO
 mfca  currently has the following set of features:
 
 - API Calls to Ollama
+- Agent that can use tools
+- tool:
+- 1. ReadFile
+- 2. ReadDirectory
 
 
 ## Contributing
@@ -50,13 +54,16 @@ Todo
 Here's the list of people who have contributed to < project's name >:
 
 - David Restle
-- 
+  
 ## Author
 
 David Restle
 
 ## Change log
-
+- 0.0.4
+    - first 2 tools available
+- 0.0.3
+    - first version of the agent    
 - 0.0.2
     - work in progress
 - 0.0.1

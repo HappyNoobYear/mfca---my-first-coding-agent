@@ -5,7 +5,6 @@ import logging
 
 from src.Timer import timer
 
-
 # installed models: gemma4:e2b, gemma3:1b, gemma4
 # gemma3:1b does not support tool calls, but is super quick
 # gemma4:e2b is slower, but supports tool calls
@@ -19,7 +18,7 @@ def test_function():
 
 @timer
 def call_ollama(
-        model_name: str ="gemma4:e2b",
+        model_name: str = "gemma4:e2b",
         tools_used: list = [],
         memory: list[dict] = []) -> dict[str, list | str]:
     """
@@ -102,10 +101,5 @@ def call_ollama(
             "full_text": answer
         }
 
-example_tools = [ReadCodeTool]
-model_name = "gemma4:e2b"
-user_prompt = "What is the current stock price of NVDA?"
-system_prompt = "You are a helpful assistant that can provide stock prices using the get_stock_price function."
 
-logging.basicConfig(level=logging.DEBUG)
-call_ollama(model_name, [], [])
+

@@ -93,13 +93,13 @@ class Agent:
 
 
 model = "gemma4:e2b"
-system_prompt = "You are a helpful coding assistant that calls tools like ReadCodeTool to answer user questions."
+system_prompt = "You are a helpful coding assistant that calls tools like ReadCodeTool or ReadDirectoyTool to answer user questions. If the user wants to read a file from a directory dont forget to add the directory to the filename as a filepath."
 tools = [ReadCodeTool, ReadDirectoryTool]
 
 # test ReadCodeTool
 # user_prompt = r"What does the Timer file (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\Timer.py) do? Use the ReadCodeTool to read the file and answer the question."
 # test ReadDirectoryTool
-user_prompt = r"Show me the files in the directory (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\). Use the ReadDirectoryTool."
+user_prompt = r"Show me the files in the directory (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\). Use the ReadDirectoryTool. If you see a file called Timer.py analyze it usig the ReadCodeTool."
 
 test_agent = agent = Agent(model, system_prompt, tools)
 response = asyncio.run(test_agent.agent_loop(user_prompt))

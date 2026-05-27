@@ -5,14 +5,15 @@ services:
       dockerfile: Agent.Dockerfile
     volumes:
       - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      # 🟢 Route out to your local Windows machine's Ollama instance
       - OLLAMA_HOST=http://host.docker.internal:11434
+      - PYTHONUNBUFFERED=1
     depends_on:
       - sandbox_worker
 
   sandbox_worker:
     image: python:3.11-slim
     volumes:
-      - .:/workspace
+      - ./sandbox_workspace:/workspace
     command: tail -f /dev/null

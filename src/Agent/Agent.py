@@ -86,10 +86,13 @@ class Agent:
         tool_class = self.tools.get(function_name)
 
         if tool_class:
-            # create an instance of the tool
-            tool = tool_class(**args)
-            # execute the tool and get the response
-            return tool.execute()
+            try:
+                # create an instance of the tool
+                tool = tool_class(**args)
+                # execute the tool and get the response
+                return tool.execute()
+            except Exception as e:
+                return f"Error executing tool {function_name}: {str(e)}"
 
         # TODO deal with missing functions
         return f"Tool {function_name} not found."
@@ -98,7 +101,13 @@ class Agent:
 # todo later build chat that asks for model and user prompt
 # todo move system prompt to own file?
 model = "gemma4:e2b"
-system_prompt = "You are a helpful coding assistant that calls tools like ReadCodeTool or ReadDirectoyTool to answer user questions. If the user wants to read a file from a directory dont forget to add the directory to the filename as a filepath. Always use the ExecuteCodeTool if the user wants you to run, test, or print something from a Python script."
+system_prompt = (
+    "You are a helpful coding assistant that calls tools like ReadCodeTool or ReadDirectoryTool to answer user questions. "
+    "CRITICAL MANDATE: Your execution environment workspace is strictly at /app. "
+    "Whenever you use WriteCodeTool, ReadCodeTool, or ReadDirectoryTool, you MUST use absolute paths starting with '/app/'. "
+    "For example, you must use '/app/sandbox_workspace/Print.py'—NEVER use relative paths like 'sandbox_workspace/Print.py'. "
+    "If you need to modify a file, overwrite the exact absolute file path you read from. Do not create new directories."
+)
 tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool]
 
 # test ReadCodeTool
@@ -109,7 +118,13 @@ tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool]
 # user_prompt = "Write a quick python script that prints 'Hello from Docker Sandbox!' and run it using your ExecuteCodeTool."
 # test write code tool
 # user_prompt = "Write a quick python script that prints 'Hello from Docker Sandbox!' and save it as hello.py using your WriteCodeTool. Then use ExecuteCodeTool to run the script."
-user_prompt = "What is your name?"
+# user_prompt = "What is your name?"
+# print to loggin prompt
+# user_prompt = "Locate Print.py inside the sandbox_workspace directory and improve the code. I want it to use logging instead of print."
+# test modifying code ability
+# user_prompt = "Locate Print.py inside the sandbox_workspace directory. I want it to change the name of the function to test_logging"
+user_prompt = "Locate Print.py inside the sandbox_workspace directory and execute it."
+
 
 
 test_agent = agent = Agent(model, system_prompt, tools)

@@ -8,8 +8,22 @@ class WriteCodeTool(BaseTool):
     code_content: str
 
     def execute(self) -> str:
-        # Force all files to be written inside the shared workspace
-        secure_path = os.path.join("/workspace", os.path.basename(self.filename))
-        with open(secure_path, 'w', encoding='utf-8') as f:
-            f.write(self.code_content)
-        return f"Successfully wrote code to secure workspace: {self.filename}"
+        # Resolve the absolute path under /workspace
+        # normpath resolves any relative segments like '.' or '..'
+        target_path = os.path.normpath(os.path.join("/app", self.filename))
+
+        # Prevent path traversal outside the safe sandbox directory
+        if not target_path.startswith("/app"):
+            return f"Security Error: Access denied. The path must stay inside the isolated workspace. Attempted: {self.filename}"
+
+        # Create parent directories if a nested file structure is requested
+        parent_dir = os.path.dirname(target_path)
+        if parent_dir and parent_dir != "/workspace":
+            os.makedirs(parent_dir, exist_ok=True)
+
+        try:
+            with open(target_path, 'w', encoding='utf-8') as f:
+                f.write(self.code_content)
+            return f"Successfully wrote code to secure workspace: {self.filename}"
+        except Exception as e:
+            return f"Error writing file to sandbox: {str(e)}"

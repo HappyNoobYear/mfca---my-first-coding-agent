@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from src.API.API import call_ollama
 from src.Tools import BaseTool
@@ -12,38 +13,36 @@ class Agent:
 
     def __init__(self, model: str, system_prompt: str, tools: list[BaseTool]):
         """
-        Initiates the Agent with a system prompt and a list of tools.
-        :param model: Model the agent should use
-        :param system_prompt: System prompt the agent should follow
-        :param tools: List of tools the agent should use
+        Initiates the Agent with a system prompt, memory layout, and tools.
         """
         self.model = model
         self.system_prompt = system_prompt
         self.tools = {t.__name__.lower(): t for t in tools}
         self.tool_schemas = [t.to_schema() for t in tools]
 
+        # Core Chat Memory: Seeded with the system instructions
+        self.messages = [
+            {"role": "system", "content": self.system_prompt}
+        ]
+
     async def agent_loop(self, user_prompt: str) -> str:
         """
-        Steps:
-        1. Call the model with the system prompt and tools
-        2. Check if the model wants to call a tool
-        2.1 If yes, parse the tool calls
-        2.2 If no, return the model response
-        3. Execute the tool calls and get results
-        4. Call the model again with the tool results
-        :param user_prompt: User prompt for the model
-        :return: response from the model
+        Processes a single user prompt through an execution loop until
+        the model decides it has finished calling tools.
         """
-        # memory of the conversation
-        # TODO this needs some optimization for large conversations
-        messages = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
+        # Append the new message to persistent chat history
+        self.messages.append({"role": "user", "content": user_prompt})
+
         while True:
             response = call_ollama(model_name=self.model,
                                    tools_used=self.tool_schemas,
-                                   memory=messages)
+                                   memory=self.messages)
+
+            # API Error Fallback: Check if response is completely empty (None)
+            if response is None:
+                error_msg = "Error: Did not receive a valid response from the Ollama API."
+                self.messages.append({"role": "assistant", "content": error_msg})
+                return error_msg
 
             tool_calls = response.get("tool_calls", [])
             assistant_msg = {
@@ -53,63 +52,78 @@ class Agent:
             if tool_calls:
                 assistant_msg["tool_calls"] = tool_calls
 
-            messages.append(assistant_msg)
+            self.messages.append(assistant_msg)
 
-            # if there are no tool calls, we can return the answer directly
-            # TODO check if this could loop indefinetly if the model keeps tools
-            #  max loop counter?
+            # If no tools to process, yield the final textual answer
             if not tool_calls:
                 return response.get("answer", "")
 
-            # if there are tool calls, we need to execute them and call the model again with the results
+            # Execute requested tools sequentially
             else:
-
-                # process tool calls
                 for t_call in tool_calls:
                     call_id = t_call.get("id")
-                    response = self.execute_tool(t_call)
-                    messages.append({"role": "tool",
-                                     "content": response,
-                                     "tool_call_id": call_id
-                                     })
+                    tool_output = self.execute_tool(t_call)
+
+                    self.messages.append({
+                        "role": "tool",
+                        "content": tool_output,
+                        "tool_call_id": call_id
+                    })
 
     def execute_tool(self, tool_call: dict):
-        """Executes a tool call from the model.
-        :param tool_call: dictionary that contains the tool call
-        :return: response from the tool execution"""
-
-        # find the function and its arguments
+        """Executes a tool call from the model."""
         function_name = tool_call.get("function", {}).get("name")
         args = tool_call.get("function", {}).get("arguments", {})
 
-        # look up the class
         tool_class = self.tools.get(function_name)
 
         if tool_class:
             try:
-                # create an instance of the tool
                 tool = tool_class(**args)
-                # execute the tool and get the response
                 return tool.execute()
             except Exception as e:
                 return f"Error executing tool {function_name}: {str(e)}"
 
-        # TODO deal with missing functions
         return f"Tool {function_name} not found."
 
+    async def start_chat(self):
+        """Launches an interactive loop for continuous live chat."""
+        print("\n🤖 Coding Agent Initialized. Type 'exit' or 'quit' to stop.")
+        print("-" * 60)
+
+        while True:
+            try:
+                user_prompt = input("\nYou: ")
+
+                if user_prompt.strip().lower() in ["exit", "quit"]:
+                    print("Goodbye!")
+                    break
+
+                if not user_prompt.strip():
+                    continue
+
+                print("\nThinking...")
+                response = await self.agent_loop(user_prompt)
+
+                print(f"\nAgent: {response}")
+                print("-" * 60)
+
+            except (KeyboardInterrupt, EOFError):
+                print("\nGoodbye!")
+                break
 
 # todo later build chat that asks for model and user prompt
 # todo move system prompt to own file?
-model = "gemma4:e2b"
-system_prompt = (
-    "You are a helpful coding assistant that calls tools like ReadCodeTool or ReadDirectoryTool to answer user questions. "
-    "CRITICAL MANDATE: Your execution environment workspace is strictly at /app. "
-    "Whenever you use WriteCodeTool, ReadCodeTool, or ReadDirectoryTool, you MUST use absolute paths starting with '/app/'. "
-    "For example, you must use '/app/sandbox_workspace/Print.py'—NEVER use relative paths like 'sandbox_workspace/Print.py'. "
-    "If you need to modify a file, overwrite the exact absolute file path you read from. Do not create new directories."
-)
-tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool]
-
+# model = "gemma4:e2b"
+# system_prompt = (
+#     "You are a helpful coding assistant that calls tools like ReadCodeTool or ReadDirectoryTool to answer user questions. "
+#     "CRITICAL MANDATE: Your execution environment workspace is strictly at /app. "
+#     "Whenever you use WriteCodeTool, ReadCodeTool, or ReadDirectoryTool, you MUST use absolute paths starting with '/app/'. "
+#     "For example, you must use '/app/sandbox_workspace/Print.py'—NEVER use relative paths like 'sandbox_workspace/Print.py'. "
+#     "If you need to modify a file, overwrite the exact absolute file path you read from. Do not create new directories."
+# )
+# tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool]
+# TODO move this into tests
 # test ReadCodeTool
 # user_prompt = r"What does the Timer file (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\Timer.py) do? Use the ReadCodeTool to read the file and answer the question."
 # test ReadDirectoryTool
@@ -123,13 +137,30 @@ tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool]
 # user_prompt = "Locate Print.py inside the sandbox_workspace directory and improve the code. I want it to use logging instead of print."
 # test modifying code ability
 # user_prompt = "Locate Print.py inside the sandbox_workspace directory. I want it to change the name of the function to test_logging"
-user_prompt = "Locate Print.py inside the sandbox_workspace directory and execute it."
+# user_prompt = "Locate Print.py inside the sandbox_workspace directory and execute it."
 
+# test_agent = agent = Agent(model, system_prompt, tools)
+# response = asyncio.run(test_agent.agent_loop(user_prompt))
+# print(response)
 
-
-test_agent = agent = Agent(model, system_prompt, tools)
-response = asyncio.run(test_agent.agent_loop(user_prompt))
-print(response)
+# asyncio.run(test_agent.start_chat())
 
 # this no longer works
 # call docker compose up --build from the terminal instead
+
+
+# Configuration setup
+model = "gemma4:e2b"
+system_prompt = (
+    "You are a helpful coding assistant that calls tools like ReadCodeTool or ReadDirectoryTool to answer user questions. "
+    "CRITICAL MANDATE: Your execution environment workspace is strictly at /app. "
+    "Whenever you use WriteCodeTool, ReadCodeTool, or ReadDirectoryTool, you MUST use absolute paths starting with '/app/'. "
+    "For example, you must use '/app/sandbox_workspace/Print.py'—NEVER use relative paths like 'sandbox_workspace/Print.py'. "
+    "If you need to modify a file, overwrite the exact absolute file path you read from. Do not create new directories."
+)
+tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool]
+
+# Instantiation and execution entry point
+if __name__ == "__main__":
+    test_agent = Agent(model, system_prompt, tools)
+    asyncio.run(test_agent.start_chat())

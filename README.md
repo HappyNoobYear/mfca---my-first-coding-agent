@@ -20,6 +20,10 @@ Repo for the coding agent project for advanced media technologies
 ## Installation
 
 TODO
+1. Install Docker
+2. Install Ollama 
+3. Download a model in Ollama (example: gemma4:e2b)
+4. Install this project
 
 ## Execution / Usage
 

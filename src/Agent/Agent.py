@@ -4,6 +4,9 @@ from src.API.API import call_ollama
 from src.Tools import BaseTool
 from src.Tools.ReadCodeTool import ReadCodeTool
 from src.Tools.ReadDirectoryTool import ReadDirectoryTool
+from src.Tools.ExecuteCodeTool import ExecuteCodeTool
+from src.Tools.WriteCodeTool import WriteCodeTool
+
 
 class Agent:
 
@@ -92,15 +95,26 @@ class Agent:
         return f"Tool {function_name} not found."
 
 
+# todo later build chat that asks for model and user prompt
+# todo move system prompt to own file?
 model = "gemma4:e2b"
-system_prompt = "You are a helpful coding assistant that calls tools like ReadCodeTool or ReadDirectoyTool to answer user questions. If the user wants to read a file from a directory dont forget to add the directory to the filename as a filepath."
-tools = [ReadCodeTool, ReadDirectoryTool]
+system_prompt = "You are a helpful coding assistant that calls tools like ReadCodeTool or ReadDirectoyTool to answer user questions. If the user wants to read a file from a directory dont forget to add the directory to the filename as a filepath. Always use the ExecuteCodeTool if the user wants you to run, test, or print something from a Python script."
+tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool]
 
 # test ReadCodeTool
 # user_prompt = r"What does the Timer file (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\Timer.py) do? Use the ReadCodeTool to read the file and answer the question."
 # test ReadDirectoryTool
-user_prompt = r"Show me the files in the directory (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\). Use the ReadDirectoryTool. If you see a file called Timer.py analyze it usig the ReadCodeTool."
+# user_prompt = r"Show me the files in the directory (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\). Use the ReadDirectoryTool. If you see a file called Timer.py analyze it usig the ReadCodeTool."
+# test execute tool
+# user_prompt = "Write a quick python script that prints 'Hello from Docker Sandbox!' and run it using your ExecuteCodeTool."
+# test write code tool
+# user_prompt = "Write a quick python script that prints 'Hello from Docker Sandbox!' and save it as hello.py using your WriteCodeTool. Then use ExecuteCodeTool to run the script."
+user_prompt = "What is your name?"
+
 
 test_agent = agent = Agent(model, system_prompt, tools)
 response = asyncio.run(test_agent.agent_loop(user_prompt))
 print(response)
+
+# this no longer works
+# call docker compose up --build from the terminal instead

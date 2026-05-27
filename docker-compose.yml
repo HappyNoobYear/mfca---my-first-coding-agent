@@ -1,0 +1,18 @@
+services:
+  agent_controller:
+    build:
+      context: .
+      dockerfile: Agent.Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      # 🟢 Route out to your local Windows machine's Ollama instance
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    depends_on:
+      - sandbox_worker
+
+  sandbox_worker:
+    image: python:3.11-slim
+    volumes:
+      - .:/workspace
+    command: tail -f /dev/null

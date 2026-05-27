@@ -1,0 +1,4 @@
+# insert dependencies here that are needed
+docker
+pydantic
+requests

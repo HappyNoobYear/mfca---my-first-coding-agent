@@ -1,0 +1,4 @@
+# TODO add needed libraries
+numpy
+pandas
+requests

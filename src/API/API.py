@@ -1,3 +1,5 @@
+import os
+
 import requests
 import json
 import re
@@ -31,22 +33,34 @@ def call_ollama(
     {"tool_calls": tool_calls, "thinking": thinking, "answer": answer, "full_text": full_text}
     """
     # todo: clean up function
-    # todo: improve code clarity of return
 
-    # standard API call for ollama
-    url = "http://localhost:11434/api/chat"
+    # get from variable or use standard API call for ollama
+    ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    url = f"{ollama_host}/api/chat"
     for memo in memory:
         print(f"{memo['role'].upper()}: {memo['content']}")
 
-    # give model, system prompt and user prompt
-    payload = {
-        "model": model_name,
-        "messages": memory,
-        "tools": tools_used,
-        "stream": False
-    }
+    if tools_used:
+        # give model, system prompt and user prompt
 
-    response = requests.post(url, json=payload, stream=False)
+        payload = {
+            "model": model_name,
+            "messages": memory,
+            "tools": tools_used,
+            "stream": False
+        }
+        response = requests.post(url, json=payload, stream=False)
+
+    else:
+        # give model, system prompt and user prompt
+        payload = {
+            "model": model_name,
+            "messages": memory,
+            "tools": tools_used,
+            "stream": True
+        }
+
+        response = requests.post(url, json=payload, stream=True)
 
     # handle different status codes
     match response.status_code:

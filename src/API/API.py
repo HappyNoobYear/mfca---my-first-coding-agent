@@ -37,8 +37,8 @@ def call_ollama(
     # get from variable or use standard API call for ollama
     ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
     url = f"{ollama_host}/api/chat"
-    for memo in memory:
-        print(f"{memo['role'].upper()}: {memo['content']}")
+    # for memo in memory:
+    #     print(f"{memo['role'].upper()}: {memo['content']}")
 
     if tools_used:
         # give model, system prompt and user prompt

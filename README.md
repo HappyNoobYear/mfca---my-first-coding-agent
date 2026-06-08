@@ -70,7 +70,8 @@ To interact with the agent natively inside an active terminal input session, spi
 Bash
 
 Build the target agent configurations and spin up worker services
-docker compose up --build -d
+
+    docker compose run --rm agent_controller
 
 Attach interactively to the agent controller's live console input stream
 

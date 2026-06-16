@@ -2,7 +2,7 @@ import json
 import logging
 import re
 import time
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, ClassVar
 from urllib.parse import urlparse
 
 import requests
@@ -28,8 +28,7 @@ class WebFetchTool(BaseTool):
     timeout: Optional[int] = 10
     follow_redirects: bool = True
 
-    # SSRF blocklist: internal IP ranges and localhost
-    BLOCKLIST_PATTERNS = [
+    BLOCKLIST_PATTERNS: ClassVar[list] = [
         r"^127\.",  # 127.0.0.0/8 loopback
         r"^localhost$",
         r"^::1$",  # IPv6 loopback

@@ -1,0 +1,48 @@
+{
+  "simple_file_read": {
+    "mfca": {
+      "success": true,
+      "tokens_used": 2004,
+      "tool_calls": 1,
+      "turns_completed": 1,
+      "error": null
+    },
+    "smolagents": {
+      "success": false,
+      "tokens_used": 0,
+      "tool_calls": 0,
+      "turns_completed": 0,
+      "error": "smolagents not available. Install with: pip install smolagents"
+    },
+    "ohpi": {
+      "success": false,
+      "tokens_used": 0,
+      "tool_calls": 0,
+      "turns_completed": 0,
+      "error": "oh-my-pi not found at None. Please clone from https://github.com/can1357/oh-my-pi.git"
+    }
+  },
+  "multi_turn_5": {
+    "mfca": {
+      "success": true,
+      "tokens_used": 2337,
+      "tool_calls": 20,
+      "turns_completed": 5,
+      "error": null
+    },
+    "smolagents": {
+      "success": false,
+      "tokens_used": 0,
+      "tool_calls": 0,
+      "turns_completed": 0,
+      "error": "smolagents not available. Install with: pip install smolagents"
+    },
+    "ohpi": {
+      "success": false,
+      "tokens_used": 0,
+      "tool_calls": 0,
+      "turns_completed": 0,
+      "error": "oh-my-pi not found at None. Please clone from https://github.com/can1357/oh-my-pi.git"
+    }
+  }
+}

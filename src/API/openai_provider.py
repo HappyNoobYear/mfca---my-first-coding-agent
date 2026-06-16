@@ -77,5 +77,5 @@ class OpenAIProvider(ILLMProvider):
             )
 
         except Exception as e:
-            logging.error(f"❌ OpenAI API Exception: {str(e)}")
+            logging.error(f"OpenAI API Exception: {str(e)}")
             return None

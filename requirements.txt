@@ -6,4 +6,7 @@ python-dotenv
 openai
 
 # Token counting for OpenAI models
-tiktoken
+tiktoken
+
+# Agent benchmarking
+smolagents

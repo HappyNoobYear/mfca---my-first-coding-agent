@@ -35,7 +35,7 @@ class OllamaProvider(ILLMProvider):
         try:
             response = requests.post(self.url, json=payload, stream=stream_mode)
         except Exception as e:
-            logging.error(f"❌ Connection error to Ollama: {str(e)}")
+            logging.error(f"Connection error to Ollama: {str(e)}")
             return None
 
         # Handle different status codes
@@ -49,7 +49,7 @@ class OllamaProvider(ILLMProvider):
                 logging.debug("Status Code 500: Server error.")
                 return None
             case _:
-                logging.debug(f"❌ Unexpected error: {response.status_code}")
+                logging.debug(f"Unexpected error: {response.status_code}")
                 return None
 
         # Scenario A: Streaming Text (No Tools Used)

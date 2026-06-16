@@ -3,12 +3,14 @@ from src.Tools.BaseTool import BaseTool
 
 
 class WriteCodeTool(BaseTool):
-    """Writes Python code into the secure shared workspace."""
+    """Writes code files to the secure sandbox workspace."""
     filename: str
     code_content: str
 
     def execute(self) -> str:
-        # Resolve the absolute path under /workspace
+        """Writes the code content to a file in the sandbox workspace.
+        :return: Success or error message."""
+        # Resolve the absolute path under /app (sandbox root)
         # normpath resolves any relative segments like '.' or '..'
         target_path = os.path.normpath(os.path.join("/app", self.filename))
 
@@ -18,7 +20,7 @@ class WriteCodeTool(BaseTool):
 
         # Create parent directories if a nested file structure is requested
         parent_dir = os.path.dirname(target_path)
-        if parent_dir and parent_dir != "/workspace":
+        if parent_dir:
             os.makedirs(parent_dir, exist_ok=True)
 
         try:

@@ -1,17 +1,22 @@
 import asyncio
-import os
+from pathlib import Path
 
-from src.API.API import call_ollama
 from src.Tools import BaseTool
+from src.config import Config
+from src.API.factory import LLMProviderFactory
 from src.Tools.ReadCodeTool import ReadCodeTool
 from src.Tools.ReadDirectoryTool import ReadDirectoryTool
 from src.Tools.ExecuteCodeTool import ExecuteCodeTool
 from src.Tools.WriteCodeTool import WriteCodeTool
+from src.Tools.WebFetchTool import WebFetchTool
+from src.API.schemas import LLMResponse, ToolCallMessage
+from src.API.interface import ILLMProvider
+from src.Memory.MemoryManager import MemoryManager
 
 
 class Agent:
 
-    def __init__(self, model: str, system_prompt: str, tools: list[BaseTool]):
+    def __init__(self, model: str, system_prompt: str, tools: list[BaseTool], provider: ILLMProvider, session_id: str = "default"):
         """
         Initiates the Agent with a system prompt, memory layout, and tools.
         """
@@ -19,6 +24,18 @@ class Agent:
         self.system_prompt = system_prompt
         self.tools = {t.__name__.lower(): t for t in tools}
         self.tool_schemas = [t.to_schema() for t in tools]
+        self.provider = provider
+        self.session_id = session_id
+
+        # Memory Management: Token counting, compression, and persistence
+        self.memory_manager = MemoryManager(
+            model_name=model,
+            provider=Config.PROVIDER,
+            max_conversation_tokens=Config.MAX_CONVERSATION_TOKENS,
+            recent_turns_to_keep=Config.RECENT_TURNS_TO_KEEP,
+            compression_enabled=Config.COMPRESSION_ENABLED,
+            external_memory_dir=Config.EXTERNAL_MEMORY_DIR
+        )
 
         # Core Chat Memory: Seeded with the system instructions
         self.messages = [
@@ -34,9 +51,14 @@ class Agent:
         self.messages.append({"role": "user", "content": user_prompt})
 
         while True:
-            response = call_ollama(model_name=self.model,
-                                   tools_used=self.tool_schemas,
-                                   memory=self.messages)
+            # Check and compress history if needed
+            self.messages = self.memory_manager.check_and_compress(self.messages)
+
+            response: LLMResponse = self.provider.generate(
+                model_name=self.model,
+                memory=self.messages,
+                tools=self.tool_schemas
+            )
 
             # API Error Fallback: Check if response is completely empty (None)
             if response is None:
@@ -44,123 +66,129 @@ class Agent:
                 self.messages.append({"role": "assistant", "content": error_msg})
                 return error_msg
 
-            tool_calls = response.get("tool_calls", [])
             assistant_msg = {
                 "role": "assistant",
-                "content": response.get("answer") or "",
+                "content": response.answer,
             }
-            if tool_calls:
-                assistant_msg["tool_calls"] = tool_calls
+            if response.tool_calls:
+                assistant_msg["tool_calls"] = [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.name,
+                            "arguments": tc.arguments
+                            # Note: Ollama takes dict, OpenAI provider handles its string conversion internally
+                        }
+                    } for tc in response.tool_calls
+                ]
 
             self.messages.append(assistant_msg)
 
             # If no tools to process, yield the final textual answer
-            if not tool_calls:
-                return response.get("answer", "")
+            if not response.tool_calls:
+                return response.answer
 
             # Execute requested tools sequentially
-            else:
-                for t_call in tool_calls:
-                    call_id = t_call.get("id")
-                    tool_output = self.execute_tool(t_call)
+            for tc in response.tool_calls:
+                tool_output = self.execute_tool(tc)
 
-                    self.messages.append({
-                        "role": "tool",
-                        "content": tool_output,
-                        "tool_call_id": call_id
-                    })
+                # Append tool outcome back into conversation memory context
+                self.messages.append({
+                    "role": "tool",
+                    "content": tool_output,
+                    "tool_call_id": tc.id
+                })
 
-    def execute_tool(self, tool_call: dict):
+    def execute_tool(self, tool_call: ToolCallMessage):
         """Executes a tool call from the model."""
-        function_name = tool_call.get("function", {}).get("name")
-        args = tool_call.get("function", {}).get("arguments", {})
-
-        tool_class = self.tools.get(function_name)
+        tool_class = self.tools.get(tool_call.name.lower())
 
         if tool_class:
             try:
-                tool = tool_class(**args)
+                # Unpack arguments directly into the class constructor
+                tool = tool_class(**tool_call.arguments)
                 return tool.execute()
             except Exception as e:
-                return f"Error executing tool {function_name}: {str(e)}"
+                return f"Error executing tool {tool_call.name}: {str(e)}"
 
-        return f"Tool {function_name} not found."
+        return f"Tool {tool_call.name} not found."
 
     async def start_chat(self):
         """Launches an interactive loop for continuous live chat."""
-        print("\n🤖 Coding Agent Initialized. Type 'exit' or 'quit' to stop.")
+        print("\n Coding Agent Initialized. Type 'exit' or 'quit' to stop.")
         print("-" * 60)
 
-        while True:
-            try:
-                user_prompt = input("\nYou: ")
+        try:
+            while True:
+                try:
+                    user_prompt = input("\nYou: ")
 
-                if user_prompt.strip().lower() in ["exit", "quit"]:
-                    print("Goodbye!")
+                    if user_prompt.strip().lower() in ["exit", "quit"]:
+                        print("Goodbye!")
+                        break
+
+                    if not user_prompt.strip():
+                        continue
+
+                    print("\nThinking...")
+                    response = await self.agent_loop(user_prompt)
+
+                    print(f"\nAgent: {response}")
+                    print("-" * 60)
+
+                except (KeyboardInterrupt, EOFError):
+                    print("\nGoodbye!")
                     break
-
-                if not user_prompt.strip():
-                    continue
-
-                print("\nThinking...")
-                response = await self.agent_loop(user_prompt)
-
-                print(f"\nAgent: {response}")
-                print("-" * 60)
-
-            except (KeyboardInterrupt, EOFError):
-                print("\nGoodbye!")
-                break
-
-# todo later build chat that asks for model and user prompt
-# todo move system prompt to own file?
-# model = "gemma4:e2b"
-# system_prompt = (
-#     "You are a helpful coding assistant that calls tools like ReadCodeTool or ReadDirectoryTool to answer user questions. "
-#     "CRITICAL MANDATE: Your execution environment workspace is strictly at /app. "
-#     "Whenever you use WriteCodeTool, ReadCodeTool, or ReadDirectoryTool, you MUST use absolute paths starting with '/app/'. "
-#     "For example, you must use '/app/sandbox_workspace/Print.py'—NEVER use relative paths like 'sandbox_workspace/Print.py'. "
-#     "If you need to modify a file, overwrite the exact absolute file path you read from. Do not create new directories."
-# )
-# tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool]
-# TODO move this into tests
-# test ReadCodeTool
-# user_prompt = r"What does the Timer file (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\Timer.py) do? Use the ReadCodeTool to read the file and answer the question."
-# test ReadDirectoryTool
-# user_prompt = r"Show me the files in the directory (C:\Users\David\Desktop\Studium\Master\Module\SS 2026\AMT\mfca---my-first-coding-agent\src\). Use the ReadDirectoryTool. If you see a file called Timer.py analyze it usig the ReadCodeTool."
-# test execute tool
-# user_prompt = "Write a quick python script that prints 'Hello from Docker Sandbox!' and run it using your ExecuteCodeTool."
-# test write code tool
-# user_prompt = "Write a quick python script that prints 'Hello from Docker Sandbox!' and save it as hello.py using your WriteCodeTool. Then use ExecuteCodeTool to run the script."
-# user_prompt = "What is your name?"
-# print to loggin prompt
-# user_prompt = "Locate Print.py inside the sandbox_workspace directory and improve the code. I want it to use logging instead of print."
-# test modifying code ability
-# user_prompt = "Locate Print.py inside the sandbox_workspace directory. I want it to change the name of the function to test_logging"
-# user_prompt = "Locate Print.py inside the sandbox_workspace directory and execute it."
-
-# test_agent = agent = Agent(model, system_prompt, tools)
-# response = asyncio.run(test_agent.agent_loop(user_prompt))
-# print(response)
-
-# asyncio.run(test_agent.start_chat())
-
-# this no longer works
-# call docker compose up --build from the terminal instead
+        finally:
+            # Save conversation before exiting
+            self.memory_manager.save_conversation(self.session_id, self.messages)
+            stats = self.memory_manager.get_stats(self.messages)
+            print(f"\n[Session saved] Tokens: {stats['total_tokens']}, Messages: {stats['message_count']}")
 
 
 # Configuration setup
-model = "gemma4:e2b"
-system_prompt = (
-    "You are a helpful coding assistant that calls tools like ReadCodeTool or ReadDirectoryTool to answer user questions. "
-    "CRITICAL MANDATE: Your execution environment workspace is strictly at /app. "
-    "Whenever you use WriteCodeTool, ReadCodeTool, or ReadDirectoryTool, you MUST use absolute paths starting with '/app/'. "
-    "For example, you must use '/app/sandbox_workspace/Print.py'—NEVER use relative paths like 'sandbox_workspace/Print.py'. "
-    "If you need to modify a file, overwrite the exact absolute file path you read from. Do not create new directories."
-)
-tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool]
+async def main():
+    # 1. Resolve provider and model configuration implicitly
+    provider = LLMProviderFactory.get_provider()
+    model = Config.MODEL_NAME
 
-# Instantiation and execution entry point
+    # 2. Collect systemic execution tools
+    tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool, WebFetchTool]
+
+    # 3. Load AGENT_CONTEXT.md for project documentation
+    agent_context = ""
+    context_path = Path(__file__).parent.parent / "AGENT_CONTEXT.md"
+    if context_path.exists():
+        with open(context_path, 'r', encoding='utf-8') as f:
+            agent_context = f.read()
+
+    system_prompt = (
+        "You are a helpful coding assistant that calls tools to answer questions. "
+        "Here is your project context:\n\n"
+        + agent_context + "\n\n"
+        + "CRITICAL MANDATE: Your execution environment workspace is strictly at /app. "
+        "Whenever you use WriteCodeTool, ReadCodeTool, or ReadDirectoryTool, you MUST use absolute paths starting with '/app/'. "
+        "For example: '/app/sandbox_workspace/Print.py'—NEVER use relative paths like 'sandbox_workspace/Print.py'. "
+        "If you need to modify a file, overwrite the exact absolute file path you read from. Do not create new directories.\n\n"
+        "WebFetchTool: Use this to fetch HTTP/HTTPS content (public APIs, web data). "
+        "Returns JSON with status_code, headers, and body (max 100KB). "
+        "Supports GET and POST. SSRF protection blocks internal IPs (127.0.0.1, 192.168.*, 10.*, etc.). "
+        "Timeout: 10s default, max 30s. If response is truncated, focus on the first 100KB and make another request if needed."
+    )
+
+    # 4. Instantiate the Agent with our clean abstractions
+    agent = Agent(
+        model=model,
+        system_prompt=system_prompt,
+        tools=tools,
+        provider=provider,
+        session_id="default"
+    )
+
+    # 5. Start processing
+    await agent.start_chat()
+
+
 if __name__ == "__main__":
-    test_agent = Agent(model, system_prompt, tools)
-    asyncio.run(test_agent.start_chat())
+    asyncio.run(main())

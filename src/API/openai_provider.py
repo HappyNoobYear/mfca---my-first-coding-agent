@@ -4,11 +4,11 @@ import logging
 from typing import List, Dict, Any, Optional
 from openai import OpenAI
 
-from src.API.interface import ILLMProvider
+from src.API.interface import LLMInterface
 from src.API.schemas import LLMResponse, ToolCallMessage
 
 
-class OpenAIProvider(ILLMProvider):
+class OpenAIProvider(LLMInterface):
     def __init__(self, api_key: str):
         self.client = OpenAI(api_key=api_key)
 
@@ -32,7 +32,7 @@ class OpenAIProvider(ILLMProvider):
     def generate(self, model_name: str, memory: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> Optional[
         LLMResponse]:
         """
-        Implements the ILLMProvider contract using the OpenAI Client Library.
+        Implements the LLMInterface using the OpenAI Client Library.
         """
         # Normalize messages to ensure tool_calls arguments are JSON strings
         normalized_memory = self._normalize_messages(memory)
@@ -49,6 +49,10 @@ class OpenAIProvider(ILLMProvider):
             response = self.client.chat.completions.create(**kwargs)
             choice = response.choices[0].message
             answer = choice.content or ""
+
+            # Real API-reported usage, same idea as Ollama's prompt_eval_count/eval_count
+            usage = response.usage
+            tokens = (usage.prompt_tokens + usage.completion_tokens) if usage else 0
 
             formatted_tool_calls = []
             if choice.tool_calls:
@@ -73,9 +77,30 @@ class OpenAIProvider(ILLMProvider):
             return LLMResponse(
                 answer=answer,
                 tool_calls=formatted_tool_calls,
-                raw_response=response
+                raw_response=response,
+                tokens_used=tokens,
             )
 
         except Exception as e:
             logging.error(f"OpenAI API Exception: {str(e)}")
             return None
+
+    # OpenAI has no live introspection endpoint for context window size (unlike
+    # Ollama's /api/show), so this is a static table of known models. Matched
+    # by prefix since OpenAI model names carry dated suffixes (e.g. "gpt-4o-2024-08-06").
+    _CONTEXT_WINDOWS = {
+        "gpt-4o": 128_000,
+        "gpt-4-turbo": 128_000,
+        "gpt-4": 8_192,
+        "gpt-3.5-turbo": 16_385,
+        "o1": 200_000,
+        "o3": 200_000,
+    }
+    _FALLBACK_CONTEXT_WINDOW = 8_192
+
+    def get_context_window(self, model_name: str) -> int:
+        """Return the known context window for model_name, or a conservative fallback."""
+        for prefix, window in self._CONTEXT_WINDOWS.items():
+            if model_name.startswith(prefix):
+                return window
+        return self._FALLBACK_CONTEXT_WINDOW

@@ -39,18 +39,29 @@ class TokenCounter:
         else:
             return self._count_approximate(message)
 
+    def _measured_text(self, message: Dict[str, Any]) -> str:
+        """Build the text whose length approximates a message's real token cost.
+
+        A message that calls a tool typically has empty or short content,
+        with the real payload sitting in tool_calls instead (name and
+        arguments). Counting content alone undercounts those messages,
+        which matters here since this count drives compression -- a
+        tool-heavy conversation could grow past what the model can
+        actually hold before compression ever triggers.
+        """
+        content = message.get("content", "")
+        text = content if isinstance(content, str) else json.dumps(content)
+
+        tool_calls = message.get("tool_calls")
+        if tool_calls:
+            text += json.dumps(tool_calls)
+
+        return text
+
     def _count_openai(self, message: Dict[str, Any]) -> int:
         """Count tokens using tiktoken for OpenAI models."""
-        content = message.get("content", "")
-        if isinstance(content, str):
-            return len(self.tiktoken_enc.encode(content))
-        # If content is dict (shouldn't happen in our format), estimate
-        return len(self.tiktoken_enc.encode(json.dumps(content)))
+        return len(self.tiktoken_enc.encode(self._measured_text(message)))
 
     def _count_approximate(self, message: Dict[str, Any]) -> int:
         """Approximate token count: ~4 characters = 1 token."""
-        content = message.get("content", "")
-        if isinstance(content, str):
-            return len(content) // 4 + 1
-        # If content is complex, estimate via JSON
-        return len(json.dumps(content)) // 4 + 1
+        return len(self._measured_text(message)) // 4 + 1

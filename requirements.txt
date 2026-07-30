@@ -9,4 +9,10 @@ openai
 tiktoken
 
 # Agent benchmarking
-smolagents
+# The adapter in benchmarks/maseval_bench/mini_swe_agent_adapter.py imports
+# minisweagent.exceptions.{Submitted,UserInterruption}, which only exists from
+# v2.0 onward -- v1.x does not have this module and will fail to import.
+mini-swe-agent>=2.0
+maseval
+smolagents
+

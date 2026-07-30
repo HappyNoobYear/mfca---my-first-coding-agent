@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional
 from src.API.schemas import LLMResponse
 
 
-class ILLMProvider(ABC):
+class LLMInterface(ABC):
     """Abstract interface for LLM providers (OpenAI, Ollama, etc.)."""
 
     @abstractmethod
@@ -18,5 +18,16 @@ class ILLMProvider(ABC):
 
         Returns:
             An LLMResponse containing the answer, tool calls, and raw response, or None on error.
+        """
+        pass
+
+    @abstractmethod
+    def get_context_window(self, model_name: str) -> int:
+        """
+        Return the model's real context window size in tokens.
+
+        Used to derive the history-compression threshold from the actual
+        model in use instead of a fixed constant, so a small local model and
+        a large cloud model don't share the same compression trigger point.
         """
         pass

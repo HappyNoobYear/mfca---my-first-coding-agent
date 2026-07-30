@@ -38,6 +38,27 @@ class ReadCodeTool(BaseTool):
             if os.path.exists(test_path):
                 resolved_path = test_path
 
+        # Auto-resolve bare relative filenames (e.g. "hello.py") by checking the
+        # shared sandbox workspace, since that's where WriteCodeTool/ExecuteCodeTool
+        # always write/run files -- a plain filename mentioned without a path is
+        # far more likely to mean "the one in the sandbox" than one relative to
+        # this process's own working directory.
+        #
+        # Deliberately NOT gated on "not os.path.exists(resolved_path)" -- that
+        # looked safe but wasn't: this process's CWD is normally the project
+        # root, which happens to contain a same-named file at the top level
+        # (AGENT_CONTEXT.md). On a case-insensitive filesystem (Windows, macOS
+        # default), os.path.exists("agent_context.md") matches that real file
+        # via case-folding alone, so the guard silently "succeeded" and this
+        # whole fallback never ran -- meaning a bare filename intended for the
+        # sandbox could silently resolve to an unrelated same-named file at
+        # the project root instead. Checking the sandbox path unconditionally,
+        # before ever looking at the bare path, removes that collision.
+        if not os.path.isabs(resolved_path):
+            test_path = os.path.join("/app/sandbox_workspace", resolved_path)
+            if os.path.exists(test_path):
+                resolved_path = test_path
+
         # Case-insensitive path resolution
         resolved_path = _resolve_case_insensitive(resolved_path)
 

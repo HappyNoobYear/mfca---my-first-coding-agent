@@ -22,10 +22,21 @@ class Config:
 
     # Token Management & History Compression
     MAX_TOKENS_PER_MESSAGE = int(os.getenv("MAX_TOKENS_PER_MESSAGE", "2000"))
-    MAX_CONVERSATION_TOKENS = int(os.getenv("MAX_CONVERSATION_TOKENS", "50000"))
-    RECENT_TURNS_TO_KEEP = int(os.getenv("RECENT_TURNS_TO_KEEP", "10"))
+    # Fallback only: used if the active model's real context window can't be
+    # determined (e.g. Ollama /api/show unreachable). Normally the compression
+    # threshold is derived from the model's actual context window instead —
+    # see COMPRESSION_CONTEXT_RATIO and Agent.__init__.
+    MAX_CONVERSATION_TOKENS = int(os.getenv("MAX_CONVERSATION_TOKENS", "4000"))
+    # Fraction of the model's real context window to use as the compression
+    # trigger threshold, leaving headroom for the system prompt, tool schemas,
+    # and the model's next response.
+    COMPRESSION_CONTEXT_RATIO = float(os.getenv("COMPRESSION_CONTEXT_RATIO", "0.5"))
+    RECENT_TURNS_TO_KEEP = int(os.getenv("RECENT_TURNS_TO_KEEP", "5"))
     COMPRESSION_ENABLED = os.getenv("COMPRESSION_ENABLED", "true").lower() == "true"
     EXTERNAL_MEMORY_DIR = os.getenv("EXTERNAL_MEMORY_DIR", "./conversation_memory")
+
+    # Selective tool schema injection — only send schemas relevant to the current task
+    SELECTIVE_TOOLS_ENABLED = os.getenv("SELECTIVE_TOOLS_ENABLED", "true").lower() == "true"
 
     # WebFetchTool Configuration
     WEBFETCH_ENABLED = os.getenv("WEBFETCH_ENABLED", "true").lower() == "true"

@@ -1,5 +1,6 @@
 import docker
 import os
+import posixpath
 from src.Tools.BaseTool import BaseTool
 
 
@@ -46,8 +47,13 @@ class ExecuteCodeTool(BaseTool):
             if clean_filename.startswith("sandbox_workspace/"):
                 clean_filename = clean_filename[len("sandbox_workspace/"):]
 
-            # This will now correctly evaluate to exactly "/workspace/Print.py"
-            target_path = os.path.normpath(os.path.join("/workspace", clean_filename))
+            # Use posixpath, not os.path: target_path is a string sent verbatim
+            # into a Linux container's shell (via exec_run), so it must always
+            # use forward slashes regardless of what OS this process runs on.
+            # os.path.normpath would inject backslashes when this process runs
+            # on Windows (e.g. under the benchmark harness), breaking both the
+            # startswith() check below and the actual command sent to the container.
+            target_path = posixpath.normpath(posixpath.join("/workspace", clean_filename))
 
             # Prevent execution attempts outside the isolated workspace
             if not target_path.startswith("/workspace"):

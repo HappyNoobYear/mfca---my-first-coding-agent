@@ -1,5 +1,12 @@
 .idea\
 
+# Project-specific: scratch files the agent writes into the sandbox during
+# interactive use or benchmark runs -- not source code, regenerated on demand.
+# Print.py is kept tracked on purpose, it's the file the README walkthrough refers to.
+sandbox_workspace/*
+!sandbox_workspace/Print.py
+!sandbox_workspace/.gitkeep
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

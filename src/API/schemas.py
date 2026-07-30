@@ -17,3 +17,4 @@ class LLMResponse:
     tool_calls: List[ToolCallMessage] = field(default_factory=list)  # Function calls the model wants to make
     thinking: Optional[str] = None  # Extended thinking/reasoning (if model supports it)
     raw_response: Any = None  # Original provider response object for debugging
+    tokens_used: int = 0  # Actual tokens consumed by this API call (prompt + completion)

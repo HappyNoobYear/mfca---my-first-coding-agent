@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from src.Memory.TokenCounter import TokenCounter
 from src.Memory.Compressor import HistoryCompressor
 from src.Memory.ExternalMemoryBackend import ExternalMemoryBackend
@@ -13,10 +13,11 @@ class MemoryManager:
         self,
         model_name: str,
         provider: str,
-        max_conversation_tokens: int = 50000,
-        recent_turns_to_keep: int = 10,
+        max_conversation_tokens: int = 4000,
+        recent_turns_to_keep: int = 5,
         compression_enabled: bool = True,
         external_memory_dir: str = "./conversation_memory",
+        llm_provider: Optional[Any] = None,
     ):
         """
         Initialize memory manager.
@@ -28,9 +29,13 @@ class MemoryManager:
             recent_turns_to_keep: Number of recent turns to preserve (default 10)
             compression_enabled: Whether to enable auto-compression (default True)
             external_memory_dir: Directory for storing conversation history
+            llm_provider: The actual LLMInterface instance the agent is using.
+                Passed through to the compressor so it can write old-turns
+                summaries with a real model call instead of only truncating.
+                Compression still works without it, just less well.
         """
         self.token_counter = TokenCounter(model_name, provider)
-        self.compressor = HistoryCompressor(self.token_counter)
+        self.compressor = HistoryCompressor(self.token_counter, llm_provider=llm_provider, model_name=model_name)
         self.external_memory = ExternalMemoryBackend(external_memory_dir)
 
         self.max_conversation_tokens = max_conversation_tokens
@@ -41,7 +46,7 @@ class MemoryManager:
 
     def check_and_compress(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Check token count and compress history if needed.
+        Check token count and compress history if it exceeds budget.
 
         Call this after each LLM response to trim the message history.
 

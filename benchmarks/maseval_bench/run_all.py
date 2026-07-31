@@ -16,7 +16,7 @@ os.environ.setdefault("LLM_MODEL", "gemma4:e2b")
 
 from benchmarks.ollama_proxy import OllamaProxy
 from benchmarks.maseval_bench.coding_benchmark import (
-    MfcaCodingBenchmark,
+    MiniClaudeCodeCodingBenchmark,
     MiniSweAgentCodingBenchmark,
     build_simple_file_read_task,
     build_multi_turn_task,
@@ -36,7 +36,11 @@ _RESULTS_PATH = _PROJECT_ROOT / "results" / "benchmark_results.json"
 _TRANSCRIPTS_DIR = _PROJECT_ROOT / "conversation_memory" / "benchmark_transcripts"
 
 _AGENTS = {
-    "mfca": (MfcaCodingBenchmark, "mfca"),
+    # "mfca" is the internal agent key threaded through transcript filenames
+    # and results/benchmark_results.json -- kept unchanged even though the
+    # class/display name is now Mini Claude Code, renaming it would orphan
+    # every already-saved transcript and result file.
+    "mfca": (MiniClaudeCodeCodingBenchmark, "mfca"),
     "mini-swe-agent": (MiniSweAgentCodingBenchmark, "mini-swe-agent"),
     "smolagents": (SmolAgentsCodingBenchmark, "smolagents"),
 }

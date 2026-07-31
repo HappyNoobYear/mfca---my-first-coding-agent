@@ -4,8 +4,9 @@ smolagents) instead of a hand-built one -- this is the "get it for free" payoff
 of adopting MASEval: no custom message-format conversion or usage-tracking
 code needed, MASEval already reads smolagents' agent.memory.steps directly.
 
-Tool parity with mfca: smolagents gets the same four tools mfca has (read/
-list/write/execute), implemented by wrapping mfca's own tool classes directly
+Tool parity with Mini Claude Code: smolagents gets the same four tools Mini
+Claude Code has (read/list/write/execute), implemented by wrapping Mini
+Claude Code's own tool classes directly
 (see smolagents_tools.py) rather than reimplementing sandboxing logic --
 both agents are judged against the literal same sandbox behavior.
 """
@@ -37,8 +38,8 @@ class ContinuingSmolAgentAdapter(SmolAgentAdapter):
     (confirmed directly: smolagents' run() docstring says reset "whether to
     reset the conversation or keep it going from previous run"). This
     override passes reset=False from the second call onward, so smolagents
-    gets genuine conversational continuity, matching what mfca already does
-    natively."""
+    gets genuine conversational continuity, matching what Mini Claude Code
+    already does natively."""
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

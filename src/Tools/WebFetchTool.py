@@ -60,7 +60,10 @@ class WebFetchTool(BaseTool):
                     )
 
             # 3. Timeout validation
-            timeout = self.timeout or Config.WEBFETCH_DEFAULT_TIMEOUT
+            # `or` would treat an explicit timeout=0 as falsy and silently
+            # substitute the default, letting the "too short" check below
+            # never see the real value the caller passed.
+            timeout = self.timeout if self.timeout is not None else Config.WEBFETCH_DEFAULT_TIMEOUT
             if timeout > Config.WEBFETCH_MAX_TIMEOUT:
                 return self._error_response(
                     f"Timeout {timeout}s exceeds maximum {Config.WEBFETCH_MAX_TIMEOUT}s."
@@ -75,7 +78,7 @@ class WebFetchTool(BaseTool):
                 )
 
             # 5. Build request
-            request_headers = {"User-Agent": "mfca-agent/1.0"}
+            request_headers = {"User-Agent": "mini-claude-code-agent/1.0"}
             if self.headers:
                 request_headers.update(self.headers)
 

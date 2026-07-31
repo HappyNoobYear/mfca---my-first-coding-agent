@@ -1,4 +1,4 @@
-# mfca — My First Coding Agent
+# Mini Claude Code
 ## Project Context & Agent Instructions
 
 ### Project Overview
@@ -16,7 +16,7 @@ Master's thesis project for Advanced Media Technologies (SS 2026). Building an a
 - **Memory System**: Token-aware history compression with sliding window + summary strategy
 - **Tools**: ReadCodeTool, ReadDirectoryTool, WriteCodeTool, ExecuteCodeTool, WebFetchTool
 - **Network**: WebFetchTool runs in agent_controller (has network), sandbox_worker is isolated (no network)
-- **Providers**: OpenAI (gpt-4o, 128K context), Ollama (gemma4:e2b, ~8K context)
+- **Providers**: OpenAI (e.g. gpt-4o, gpt-4o-mini) or Ollama (e.g. gemma4:e2b), selected via configuration
 
 ### Key Capabilities
 1. **Read Files** — Use `ReadCodeTool` to examine source code with case-insensitive fallback
@@ -34,6 +34,12 @@ Master's thesis project for Advanced Media Technologies (SS 2026). Building an a
 - Docker and Docker Compose
 - Ollama (for local inference) OR OpenAI API key
 
+**Setup:**
+```bash
+pip install -r requirements.txt
+cp .env.example .env   # then edit .env with your provider/model/API key
+```
+
 **Start the Agent:**
 ```bash
 # Build Docker image
@@ -43,9 +49,9 @@ docker compose build
 docker compose run --rm agent_controller
 ```
 
-**Environment Variables:**
+**Environment Variables** (see `.env.example` for the full list with defaults):
 ```bash
-# Provider selection (default: openai)
+# Provider selection
 LLM_PROVIDER=openai|ollama
 
 # Model name
@@ -59,9 +65,9 @@ OPENAI_API_KEY=sk-proj-...
 OLLAMA_HOST=http://localhost:11434
 
 # Memory/Compression settings
-MAX_CONVERSATION_TOKENS=50000    # token threshold for compression
-RECENT_TURNS_TO_KEEP=10          # keep last N turns in full context
+RECENT_TURNS_TO_KEEP=5           # keep last N complete turns in full context
 COMPRESSION_ENABLED=true         # enable history compression
+MAX_CONVERSATION_TOKENS=4000     # fallback only, used if the model's real context window can't be determined
 
 # WebFetchTool settings
 WEBFETCH_ENABLED=true                    # enable HTTP requests
@@ -74,14 +80,13 @@ WEBFETCH_BLOCKLIST_INTERNAL_IPS=true     # block SSRF (internal IP ranges)
 ### Workspace & File Paths
 - **Agent workspace**: `/app` (absolute root in Docker)
 - **Sandbox workspace**: `/app/sandbox_workspace` (shared with sandbox container)
-- **All file operations must use absolute paths** starting with `/app/`
-- **Example**: `/app/sandbox_workspace/hello.py`, NOT `sandbox_workspace/hello.py`
+- **Write/execute paths**: `WriteCodeTool` and `ExecuteCodeTool` accept either an absolute `/app/sandbox_workspace/...` path or a bare relative filename (e.g. `hello.py`), both resolve to the same sandbox directory
+- **Example**: `/app/sandbox_workspace/hello.py` and `hello.py` both refer to the same file
 
 ### What You Should Know
 - **Network Isolation**: Sandbox worker has NO network access. Use WebFetchTool for HTTP requests (runs in agent_controller)
 - **WebFetchTool SSRF Protection**: Blocks internal IPs (127.0.0.0/8, 192.168.*, 10.*, 172.16.*/12) to prevent attacks
 - **WebFetchTool Limits**: 10-30s timeout, 100KB response limit, supports GET/POST only
-- **Absolute Paths Only**: Always use paths like `/app/file.py`, never relative paths
 - **5 Second Timeout**: Code execution times out after 5 seconds (prevent infinite loops)
 - **Non-root User**: Sandbox runs as `agentuser` (UID 1000), not root
 - **Case Insensitive**: File tools resolve case mismatches (Print.py works for print.py)
@@ -123,18 +128,17 @@ Once started, try these commands:
    ```
 
 ### How History Compression Works
-When conversations get long:
-1. Agent tracks total tokens in the message history
-2. If tokens exceed the threshold (default 50K):
-   - **Keep**: Last 10 complete turns in full context
-   - **Summarize**: All older turns into a single summary message
-   - This preserves recent context while reducing memory footprint
+When compression runs:
+1. The context manager tracks the conversation's total token count.
+2. Once that count crosses a threshold, a fraction (0.5 by default) of the model's real context window read through the provider, not a fixed number:
+   - **Keep**: The most recent complete turns untouched (`RECENT_TURNS_TO_KEEP`, 5 by default)
+   - **Summarize**: All older turns into a single message, written by an actual model call when one is available, falling back to a deterministic truncation-based summary otherwise
 3. The compressed history is used for the next LLM call
 
 ### Architecture Notes
 - **Tool Schemas**: Tools are Pydantic models with `to_schema()` that generate OpenAI-compatible function schemas
-- **Provider Interface**: Unified `ILLMProvider` interface handles OpenAI and Ollama differences
-- **Token Counting**: OpenAI uses `tiktoken` (accurate), Ollama uses approximation (~4 chars per token)
+- **Provider Interface**: `LLMInterface` is the shared abstract class both `OpenAIProvider` and `OllamaProvider` implement
+- **Token Counting**: OpenAI uses `tiktoken` (accurate), Ollama uses an approximation (~4 chars per token)
 - **Message Format**: Standard OpenAI message format (role, content, optional tool_calls)
 
 ### Key Files
@@ -153,23 +157,23 @@ When conversations get long:
 - Solution: Case-insensitive lookup is now automatic
 
 **File not found errors:**
-- Check: Did you use absolute path `/app/...`?
-- Check: Is the filename's case correct? (tools do case-insensitive fallback now)
+- Check the filename's case is correct (tools do case-insensitive fallback)
 
 **Context limit exceeded:**
 - History compression should trigger automatically
-- Check: Are you running 100+ turns? Verify COMPRESSION_ENABLED=true
+- Check: is `COMPRESSION_ENABLED=true`?
 
 **Connection to Ollama failed:**
 - Check: Is Ollama running? `ollama list`
-- Check: Is OLLAMA_HOST correct? (should be `http://localhost:11434`)
+- Check: Is `OLLAMA_HOST` correct? (should be `http://localhost:11434`, or `http://host.docker.internal:11434` from inside a container)
 
 **OpenAI API errors:**
-- Check: Is OPENAI_API_KEY set correctly?
+- Check: Is `OPENAI_API_KEY` set correctly?
 - Check: Do you have API quota remaining?
 
 ### Future Enhancements
 - [x] Internet request handling (WebFetchTool with SSRF protection)
+- [x] Benchmark harness comparing this agent against other open-source coding-agent frameworks
 - [ ] Extended thinking support for complex reasoning
 - [ ] Multi-session conversation recall
 - [ ] Custom function definitions (user-provided tools)

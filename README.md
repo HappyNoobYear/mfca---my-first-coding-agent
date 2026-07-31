@@ -1,4 +1,4 @@
-# mfca — My First Coding Agent
+# Mini Claude Code
 
 An autonomous, multi-turn AI coding assistant built for the Advanced Media Technologies (AMT) Master's module. The agent iteratively reasons, inspects directories, reads and writes source code, executes files inside a secure, network-isolated Docker sandbox, and fetches web content, all through a swappable LLM backend (local Ollama model or OpenAI's API).
 
@@ -52,9 +52,10 @@ Every executed command also runs under a hard 5-second timeout. See the accompan
 
 ## Installation & Prerequisites
 
-Ensure Docker Desktop is running. If you want to use a local model, install [Ollama](https://ollama.com) and pull a model:
+Ensure Docker Desktop is running. If you want to use a local model, install [Ollama](https://ollama.com), start it, and pull a model:
 
 ```bash
+ollama serve
 ollama pull gemma4:e2b
 ```
 
@@ -65,11 +66,13 @@ git clone https://github.com/DavidRestle/mfca---my-first-coding-agent.git
 cd mfca---my-first-coding-agent
 ```
 
-2. Install Python dependencies (needed even if you only run the interactive agent, not just the benchmark harness):
+2. Install Python dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
+
+This is required to run the benchmark harness or the test suite directly. The interactive agent (below) runs inside Docker, which installs these same dependencies automatically when it builds its image, but running this command now covers everything in the repo, not just one part of it.
 
 3. Configure your environment:
 
@@ -103,7 +106,11 @@ docker compose down
 
 ## Benchmarking & Evaluation
 
-`benchmarks/maseval_bench/` wraps this agent (`mfca`) alongside two existing open-source frameworks, `mini-swe-agent` and `smolagents`, under [MASEval](https://github.com/maseval/MASEval)'s shared Task/Environment/Evaluator interfaces, so all three are scored on identical tasks with identical logic. This is the harness behind the Evaluation section of the accompanying report.
+Before running either script, start the sandbox container: `docker compose up -d sandbox_worker`. The interactive agent gets this started automatically, `agent_controller`'s `depends_on` in `docker-compose.yml` handles it, but these benchmark scripts run as plain Python on your host, not through `docker compose run`, so that automatic dependency never kicks in. Without it, any scenario that writes or executes code (the 5-turn task, both HumanEval tasks) fails.
+
+`benchmarks/maseval_bench/` wraps this agent (Mini Claude Code, keyed internally as `mfca`) alongside two existing open-source frameworks, `mini-swe-agent` and `smolagents`, under [MASEval](https://github.com/maseval/MASEval)'s shared Task/Environment/Evaluator interfaces, so all three are scored on identical tasks with identical logic. This is the harness behind the Evaluation section of the accompanying report.
+
+**On Windows**, mini-swe-agent needs Git Bash to run correctly (it looks for it at `C:\Program Files\Git\bin\bash.exe` or `...\usr\bin\bash.exe`, the default location when Git for Windows is installed normally). Without it, mini-swe-agent silently falls back to `cmd.exe`, which cannot parse the bash heredoc syntax it relies on to write files, no error is raised, it just fails the affected tasks quietly. If you already have Git installed to clone this repo, you almost certainly already have this.
 
 To rerun the local-model comparison (requires Ollama running with the model pulled):
 
@@ -121,21 +128,19 @@ Each run writes results to `results/benchmark_results.json` / `results/benchmark
 
 ## Change Log
 
-- **Evaluation phase** — Added the MASEval-based benchmark harness comparing mfca against mini-swe-agent and smolagents, an independent token/tool-call counting proxy for Ollama, and a local-vs-cloud model comparison.
-- **Sandboxing hardening** — Network-isolated sandbox worker, Docker-socket-based command dispatch, path normalization against directory traversal, WebFetchTool SSRF protections.
-- **Memory management** — Context-window-aware history compression (model-written summaries with a deterministic fallback) and selective tool-schema exposure.
-- **Provider abstraction** — Swappable `LLMInterface` behind `OpenAIProvider`/`OllamaProvider`, selected via configuration.
+- **v1.6** — Added the MASEval-based benchmark harness comparing Mini Claude Code against mini-swe-agent and smolagents, an independent token/tool-call counting proxy for Ollama, and a local-vs-cloud model comparison.
+- **v1.5** — Network-isolated sandbox worker, Docker-socket-based command dispatch, path normalization against directory traversal, WebFetchTool SSRF protections.
+- **v1.4** — Context-window-aware history compression (model-written summaries with a deterministic fallback) and selective tool-schema exposure.
+- **v1.3** — Swappable `LLMInterface` behind `OpenAIProvider`/`OllamaProvider`, selected via configuration.
 - **v1.2** — Multi-turn conversation memory.
 - **v1.0** — `ExecuteCodeTool` and container isolation.
 - **v0.3** — `WriteCodeTool`.
 - **v0.2** — `ReadDirectoryTool`, `ReadCodeTool`.
 - **v0.1** — Initial prototype.
 
-## Contributors
+## Contributors & License
 
 - **Author:** David Restle
 - **Academic Context:** Master's Student — Module: Advanced Media Technologies (AMT), Summer Semester 2026
-
-## License
 
 This project is open-source and licensed under the MIT License.

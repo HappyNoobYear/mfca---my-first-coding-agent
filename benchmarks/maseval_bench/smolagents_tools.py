@@ -1,12 +1,12 @@
-"""Real tools for smolagents, mirroring mfca's own five tools.
+"""Real tools for smolagents, mirroring Mini Claude Code's own five tools.
 
 Rather than reimplementing read/write/execute logic for smolagents, these
-wrap mfca's own (now Windows-safe, posixpath-fixed) tool classes directly --
+wrap Mini Claude Code's own (now Windows-safe, posixpath-fixed) tool classes directly --
 same sandbox_workspace path, same sandbox_worker container, same security
 checks. This is a stronger fairness guarantee than parallel reimplementation
 would be: both agents are judged against the literal same sandboxing
 behavior, just exposed through smolagents' @tool convention instead of
-mfca's BaseTool/Pydantic convention.
+Mini Claude Code's BaseTool/Pydantic convention.
 """
 
 from smolagents import tool

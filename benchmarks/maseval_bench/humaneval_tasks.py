@@ -39,7 +39,7 @@ def extract_smolagents_tool_calls(messages: List[dict]) -> List[dict]:
     role="tool-call", content=[{"type": "text", "text":
     "Calling tools:\n[{'id': ..., 'function': {'name': 'write_code', ...}}]"}].
     The real data is genuinely present, just not exposed as structured data
-    the way mfca's/mini-swe-agent's traces are -- parse it back out instead
+    the way Mini Claude Code's/mini-swe-agent's traces are -- parse it back out instead
     of leaving smolagents' tool-call visibility at a permanent 0.
     """
     calls: List[dict] = []
@@ -92,7 +92,7 @@ class CorrectnessEvaluator(Evaluator):
         """Coarse, framework-agnostic signal: did the agent make any tool
         calls at all. Deliberately not checking for specific tool names --
         mini-swe-agent's single-bash-tool paradigm has no "write" vs
-        "execute" tool names to match against the way mfca/smolagents do."""
+        "execute" tool names to match against the way Mini Claude Code/smolagents do."""
         for agent_trace in traces.get("agents", {}).values():
             if agent_trace.get("tool_calls"):
                 return True

@@ -211,12 +211,12 @@ class Agent:
 
 
 def build_system_prompt(include_project_context: bool = True) -> str:
-    """The real system prompt mfca runs with -- including the CRITICAL MANDATE
+    """The real system prompt Mini Claude Code runs with -- including the CRITICAL MANDATE
     that tells the model it must use WriteCodeTool/ExecuteCodeTool for file
     operations. Shared by main() and the benchmark harness so they can't
     silently drift apart the way they did before (the benchmark was passing
     a stripped-down generic prompt missing this mandate entirely, which is
-    why mfca in benchmarks never reached for WriteCodeTool the way it does
+    why Mini Claude Code in benchmarks never reached for WriteCodeTool the way it does
     in normal use).
 
     include_project_context controls whether AGENT_CONTEXT.md (this repo's

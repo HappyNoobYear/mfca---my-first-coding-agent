@@ -20,7 +20,7 @@ os.environ["LLM_PROVIDER"] = "openai"
 os.environ.setdefault("LLM_MODEL", "gpt-4o-mini")
 
 from benchmarks.maseval_bench.coding_benchmark import (
-    MfcaCodingBenchmark,
+    MiniClaudeCodeCodingBenchmark,
     MiniSweAgentCodingBenchmark,
     build_simple_file_read_task,
     build_multi_turn_task,
@@ -38,7 +38,8 @@ _RESULTS_PATH = _PROJECT_ROOT / "results" / "benchmark_results_openai.json"
 _TRANSCRIPTS_DIR = _PROJECT_ROOT / "conversation_memory" / "benchmark_transcripts"
 
 _AGENTS = {
-    "mfca": (MfcaCodingBenchmark, "mfca"),
+    # "mfca" is the internal agent key, see the matching comment in run_all.py.
+    "mfca": (MiniClaudeCodeCodingBenchmark, "mfca"),
     "mini-swe-agent": (MiniSweAgentCodingBenchmark, "mini-swe-agent"),
     "smolagents": (SmolAgentsCodingBenchmark, "smolagents"),
 }

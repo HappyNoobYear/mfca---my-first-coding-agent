@@ -167,7 +167,7 @@ class TestWebFetchToolRequests:
 
         args, kwargs = mock_request.call_args
         assert "User-Agent" in kwargs["headers"]
-        assert "mfca-agent" in kwargs["headers"]["User-Agent"]
+        assert "mini-claude-code-agent" in kwargs["headers"]["User-Agent"]
 
     @patch("src.Tools.WebFetchTool.requests.request")
     def test_custom_headers(self, mock_request):

@@ -1,4 +1,4 @@
-"""Minimal MASEval Benchmark wrapping mfca for a coding-agent task.
+"""Minimal MASEval Benchmark wrapping Mini Claude Code for a coding-agent task.
 
 No MASEval-shipped benchmark tests coding tool-use (they're multi-agent
 coordination/safety/general-capability), so this Task/Environment/Evaluator
@@ -29,7 +29,7 @@ from src.Tools.WebFetchTool import WebFetchTool
 
 import tempfile
 
-from benchmarks.maseval_bench.mfca_agent_adapter import MfcaAgentAdapter
+from benchmarks.maseval_bench.mini_claude_code_agent_adapter import MiniClaudeCodeAgentAdapter
 from benchmarks.maseval_bench.mini_swe_agent_adapter import MiniSweAgentAdapter, build_default_agent
 from benchmarks.maseval_bench.humaneval_tasks import CorrectnessEvaluator, extract_smolagents_tool_calls
 
@@ -37,7 +37,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 class CodingEnvironment(Environment):
-    """mfca manages its own tools internally (wired inside Agent.__init__,
+    """Mini Claude Code manages its own tools internally (wired inside Agent.__init__,
     not supplied by MASEval), so this environment only tracks task-relevant
     file state for evaluators -- it has no tools of its own to create."""
 
@@ -53,7 +53,7 @@ class ToolUsageEvaluator(Evaluator):
     counting tool calls from the traced message history.
 
     agent_name selects which registered agent's trace to filter to, so the
-    same evaluation logic is reused across mfca, mini-swe-agent, or any other
+    same evaluation logic is reused across Mini Claude Code, mini-swe-agent, or any other
     adapter without duplicating this class (the two-stage filter/evaluate
     pattern MASEval's Evaluator is designed for)."""
 
@@ -65,7 +65,7 @@ class ToolUsageEvaluator(Evaluator):
 
     @staticmethod
     def _normalize_tool_name(name: str) -> str:
-        # mfca's tool classes are named e.g. "ReadCodeTool" (lowercases to
+        # Mini Claude Code's tool classes are named e.g. "ReadCodeTool" (lowercases to
         # "readcodetool", containing "readcode") but smolagents' tools are
         # named "read_code" (snake_case) -- the underscore breaks a plain
         # substring match even though it's the same conceptual tool.
@@ -234,8 +234,8 @@ class ScriptedUser(User):
         return {**super().gather_config(), "total_turns": len(self._turns)}
 
 
-class MfcaCodingBenchmark(Benchmark):
-    """Minimal MASEval Benchmark wrapping mfca for coding-agent tasks.
+class MiniClaudeCodeCodingBenchmark(Benchmark):
+    """Minimal MASEval Benchmark wrapping Mini Claude Code for coding-agent tasks.
 
     For multi-turn tasks (task.user_data["turns"] set), construct this with
     max_invocations=len(turns) -- see build_multi_turn_task() below.
@@ -252,10 +252,10 @@ class MfcaCodingBenchmark(Benchmark):
         provider = LLMProviderFactory.get_provider()
         tools = [ReadCodeTool, ReadDirectoryTool, ExecuteCodeTool, WriteCodeTool, WebFetchTool]
         # Real system prompt (CRITICAL MANDATE included) -- not the generic
-        # stub used before, which is why mfca never reached for WriteCodeTool
+        # stub used before, which is why Mini Claude Code never reached for WriteCodeTool
         # in prior benchmark runs the way it does in normal use. No project
         # context injected: these are generic tasks unrelated to this repo.
-        mfca_agent = Agent(
+        mini_claude_code_agent = Agent(
             model=Config.MODEL_NAME,
             system_prompt=agent_data.get(
                 "system_prompt",
@@ -265,7 +265,11 @@ class MfcaCodingBenchmark(Benchmark):
             provider=provider,
             session_id="maseval-spike",
         )
-        adapter = MfcaAgentAdapter(mfca_agent, name="mfca")
+        # name="mfca" is the internal agent key threaded through transcript
+        # filenames and results/benchmark_results.json -- see
+        # mini_claude_code_agent_adapter.py's class docstring for why it's
+        # not renamed to match the display name.
+        adapter = MiniClaudeCodeAgentAdapter(mini_claude_code_agent, name="mfca")
         return [adapter], {"mfca": adapter}
 
     def setup_evaluators(self, environment, task, agents, user, seed_generator):
@@ -293,7 +297,7 @@ _SIMPLE_READ_SANDBOX_PATH = _PROJECT_ROOT / "sandbox_workspace" / _SIMPLE_READ_F
 # Deliberately NOT AGENT_CONTEXT.md's real content. Confirmed via a saved
 # transcript (conversation_memory/benchmark_transcripts/) that copying
 # AGENT_CONTEXT.md in verbatim backfires specifically for mini-swe-agent:
-# that file documents mfca's own tools (ReadDirectoryTool, ReadCodeTool,
+# that file documents Mini Claude Code's own tools (ReadDirectoryTool, ReadCodeTool,
 # WebFetchTool, ...) and gives example commands for them. mini-swe-agent has
 # exactly one real tool, plain bash, but after reading the file it started
 # hallucinating calls like ReadDirectoryTool(path="...") as if those were
@@ -326,7 +330,7 @@ def build_simple_file_read_task() -> Task:
 
     Originally pointed agents at AGENT_CONTEXT.md via its native Windows
     absolute path (C:\\Users\\...). Confirmed via transcript that this broke
-    every agent for a different reason: mfca's own system prompt tells it
+    every agent for a different reason: Mini Claude Code's own system prompt tells it
     "you may read any file under /app/", so it correctly refused a path
     outside that convention instead of calling ReadCodeTool at all; mini-swe-
     agent's bash treats unescaped backslashes as escape characters, silently
@@ -334,7 +338,7 @@ def build_simple_file_read_task() -> Task:
     ("C:UsersDavid...") -- it retried the identical broken command 5 times
     rather than adapting. Both are real agent behaviors, not benchmark noise,
     but the task itself was unfair: one hard-coded path style can't suit
-    mfca's Docker-path convention and mini-swe-agent's shell simultaneously.
+    Mini Claude Code's Docker-path convention and mini-swe-agent's shell simultaneously.
 
     Fix: copy a neutral reference file (see _SIMPLE_READ_CONTENT, not
     AGENT_CONTEXT.md -- see that constant's comment for why) into the shared
@@ -342,7 +346,7 @@ def build_simple_file_read_task() -> Task:
     /app/sandbox_workspace on Windows via the existing junction), phrase the
     query with one unambiguous relative filename, and give ReadCodeTool a
     sandbox-relative fallback (see ReadCodeTool.py) so that same bare
-    filename resolves correctly for mfca/smolagents too. Originally this
+    filename resolves correctly for Mini Claude Code/smolagents too. Originally this
     also mentioned the file's "full path" as /app/sandbox_workspace/... for
     tool-using agents, but that's actively wrong for mini-swe-agent:
     confirmed via transcript that Git Bash's MSYS root does not resolve a
@@ -376,7 +380,7 @@ def build_simple_file_read_task() -> Task:
 
 def build_multi_turn_task() -> Task:
     """Mirrors test_runner.py's existing multi_turn_5 scenario. Run this task
-    through a MfcaCodingBenchmark(max_invocations=5) instance -- max_invocations
+    through a MiniClaudeCodeCodingBenchmark(max_invocations=5) instance -- max_invocations
     must match len(turns) for ScriptedUser's loop-bound assumption to hold."""
     turns = [
         "Create a simple Python script that prints numbers from 1 to 5",
@@ -397,7 +401,7 @@ def build_multi_turn_task() -> Task:
 
 
 class MiniSweAgentCodingBenchmark(Benchmark):
-    """Same coding-agent tasks, wrapping mini-SWE-agent instead of mfca.
+    """Same coding-agent tasks, wrapping mini-SWE-agent instead of Mini Claude Code.
 
     Reuses CodingEnvironment/ScriptedUser/ToolUsageEvaluator unchanged --
     exactly the cross-framework reuse this whole MASEval spike was meant to

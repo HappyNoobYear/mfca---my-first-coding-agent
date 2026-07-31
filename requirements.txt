@@ -8,6 +8,9 @@ openai
 # Token counting for OpenAI models
 tiktoken
 
+# Tests
+pytest
+
 # Agent benchmarking
 # The adapter in benchmarks/maseval_bench/mini_swe_agent_adapter.py imports
 # minisweagent.exceptions.{Submitted,UserInterruption}, which only exists from

@@ -1,0 +1,178 @@
+{
+  "simple_file_read": {
+    "mfca": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 1,
+          "expected_tool_used": true,
+          "actually_executed": false
+        }
+      ],
+      "self_reported_tokens": 1709,
+      "tool_calls": 1
+    },
+    "mini-swe-agent": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 2,
+          "expected_tool_used": true,
+          "actually_executed": false
+        }
+      ],
+      "self_reported_tokens": 1460,
+      "tool_calls": 2
+    },
+    "smolagents": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 2,
+          "expected_tool_used": true,
+          "actually_executed": false
+        }
+      ],
+      "self_reported_tokens": 2906,
+      "tool_calls": 2
+    }
+  },
+  "multi_turn_5": {
+    "mfca": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 9,
+          "expected_tool_used": true,
+          "actually_executed": true
+        }
+      ],
+      "self_reported_tokens": 12374,
+      "tool_calls": 9
+    },
+    "mini-swe-agent": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 10,
+          "expected_tool_used": true,
+          "actually_executed": false
+        }
+      ],
+      "self_reported_tokens": 15131,
+      "tool_calls": 10
+    },
+    "smolagents": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 17,
+          "expected_tool_used": true,
+          "actually_executed": true
+        }
+      ],
+      "self_reported_tokens": 30088,
+      "tool_calls": 17
+    }
+  },
+  "humaneval_has_close_elements": {
+    "mfca": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "ALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 17787,
+      "tool_calls": 10
+    },
+    "mini-swe-agent": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "ALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 3592,
+      "tool_calls": 3
+    },
+    "smolagents": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "ALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 16070,
+      "tool_calls": 9
+    }
+  },
+  "humaneval_mean_absolute_deviation": {
+    "mfca": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "ALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 6987,
+      "tool_calls": 6
+    },
+    "mini-swe-agent": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "ALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 10709,
+      "tool_calls": 7
+    },
+    "smolagents": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "1.0\nALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 4728,
+      "tool_calls": 3
+    }
+  }
+}

@@ -1,0 +1,32 @@
+services:
+  agent_controller:
+    build:
+      context: .
+      dockerfile: Agent.Dockerfile
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - PYTHONUNBUFFERED=1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - internet_facing  # The agent can talk to the internet (Ollama/APIs)
+      - isolated_sandbox # The agent can talk to the sandbox
+    depends_on:
+      - sandbox_worker
+
+  sandbox_worker:
+    image: python:3.11-slim
+    volumes:
+      - ./sandbox_workspace:/workspace
+    command: tail -f /dev/null
+    networks:
+      - isolated_sandbox # The sandbox is ONLY on the isolated network
+
+networks:
+  internet_facing:
+    driver: bridge   # Standard bridge (has internet access)
+  isolated_sandbox:
+    internal: true   # CRITICAL: Disables the internet gateway completely!

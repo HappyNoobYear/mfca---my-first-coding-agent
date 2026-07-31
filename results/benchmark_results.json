@@ -1,0 +1,190 @@
+{
+  "simple_file_read": {
+    "mfca": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 1,
+          "expected_tool_used": true,
+          "actually_executed": false
+        }
+      ],
+      "self_reported_tokens": 2246,
+      "proxy_tokens": 2246,
+      "proxy_tool_calls": 1
+    },
+    "mini-swe-agent": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 2,
+          "expected_tool_used": true,
+          "actually_executed": false
+        }
+      ],
+      "self_reported_tokens": 2749,
+      "proxy_tokens": 2749,
+      "proxy_tool_calls": 2
+    },
+    "smolagents": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 2,
+          "expected_tool_used": true,
+          "actually_executed": false
+        }
+      ],
+      "self_reported_tokens": 6726,
+      "proxy_tokens": 6726,
+      "proxy_tool_calls": 0
+    }
+  },
+  "multi_turn_5": {
+    "mfca": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 10,
+          "expected_tool_used": true,
+          "actually_executed": true
+        }
+      ],
+      "self_reported_tokens": 14926,
+      "proxy_tokens": 14926,
+      "proxy_tool_calls": 10
+    },
+    "mini-swe-agent": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": false,
+          "tool_calls": 9,
+          "expected_tool_used": true,
+          "actually_executed": true
+        }
+      ],
+      "self_reported_tokens": 18574,
+      "proxy_tokens": 18574,
+      "proxy_tool_calls": 9
+    },
+    "smolagents": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "answered": true,
+          "tool_calls": 10,
+          "expected_tool_used": true,
+          "actually_executed": false
+        }
+      ],
+      "self_reported_tokens": 98352,
+      "proxy_tokens": 98352,
+      "proxy_tool_calls": 7
+    }
+  },
+  "humaneval_has_close_elements": {
+    "mfca": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "ALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 7744,
+      "proxy_tokens": 7744,
+      "proxy_tool_calls": 4
+    },
+    "mini-swe-agent": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "Verification Result: True\nALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 17300,
+      "proxy_tokens": 17300,
+      "proxy_tool_calls": 5
+    },
+    "smolagents": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "Verification result for [1.0, 2.8, 3.0, 4.0, 5.0, 2.0] and threshold 0.3: True\nALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 7549,
+      "proxy_tokens": 7549,
+      "proxy_tool_calls": 2
+    }
+  },
+  "humaneval_mean_absolute_deviation": {
+    "mfca": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "Test input: [1.0, 2.0, 3.0, 4.0]\nExpected result: 1.0\nActual result: 1.0\nVerification passed.\nALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 3706,
+      "proxy_tokens": 3706,
+      "proxy_tool_calls": 2
+    },
+    "mini-swe-agent": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "Test case: [1.0, 2.0, 3.0, 4.0]\nResult: 1.0\nALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 11553,
+      "proxy_tokens": 11553,
+      "proxy_tool_calls": 2
+    },
+    "smolagents": {
+      "status": "success",
+      "error": null,
+      "eval": [
+        {
+          "resolved": true,
+          "used_tools": true,
+          "reason": "ran",
+          "output": "ALL_TESTS_PASSED\n"
+        }
+      ],
+      "self_reported_tokens": 9643,
+      "proxy_tokens": 9643,
+      "proxy_tool_calls": 0
+    }
+  }
+}
